@@ -140,11 +140,11 @@ async def get_deliverables(
             ],
         )
 
-        # for r in records:
-        #     f = r.get("fields", {})
-        #     link = f.get("Link Cover Image")
-        #     if isinstance(link, list) and link:
-        #         f["Link Cover Image Final"] = resolve_redirect(link[0])
+        for r in records:
+            f = r.get("fields", {})
+            link = f.get("Link Cover Image")
+            if isinstance(link, list) and link:
+                f["Link Cover Image Final"] = resolve_redirect(link[0])
 
         response = {"records": records}
 
