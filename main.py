@@ -179,3 +179,38 @@ async def airtable_event(payload: dict, x_airtable_secret: str = Header(None)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/airtable/warmup")
+async def airtable_warmup(payload: dict, x_airtable_secret: str = Header(None)):
+    if x_airtable_secret != AIRTABLE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=401, detail="Invalid secret")
+
+    records = payload.get("records")
+    if not isinstance(records, list):
+        raise HTTPException(status_code=400, detail="Missing or invalid records list")
+
+    try:
+        # 1. Limpiar cache
+        CACHE.clear()
+
+        # 2. Agrupar por Celular
+        grouped = defaultdict(list)
+        for r in records:
+            fields = r.get("fields", {})
+            phone = fields.get("Celular")
+            if phone:
+                grouped[phone].append(r)
+
+        # 3. Guardar cada grupo en cache
+        for phone, recs in grouped.items():
+            key = f"deliverables:{phone}"
+            cache_set(key, {"records": recs})
+
+        return {
+            "status": "ok",
+            "phones_loaded": len(grouped),
+            "records_loaded": len(records),
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
