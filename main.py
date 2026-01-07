@@ -95,7 +95,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.use2\.devtunnels\.ms|http://127\.0\.0\.1:5500|http://localhost:3000|http://localhost:5173",
+    allow_origin_regex = r"^https://deliverables-frontend(-.*)?\.vercel\.app$|^https://.*\.use2\.devtunnels\.ms$|^http://localhost:5173$|^http://localhost:3000$|^http://127\.0\.0\.1:5500$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -214,3 +214,9 @@ async def airtable_warmup(payload: dict, x_airtable_secret: str = Header(None)):
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+from fastapi import Request
+
+@app.get("/debug-origin")
+async def debug_origin(request: Request):
+    return {"origin": request.headers.get("origin")}
