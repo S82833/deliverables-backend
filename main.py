@@ -12,6 +12,7 @@ from pyairtable import Api
 import requests
 import time
 from typing import Dict, Any, Tuple
+import re
 
 CACHE: Dict[str, Tuple[float, Any]] = {}
 CACHE_TTL = 60 * 60 * 1  # seconds
@@ -39,7 +40,16 @@ def resolve_redirect(url: str) -> str:
         return r.url
     except Exception:
         return url
-    
+
+
+def normalize_phone(raw: str) -> str | None:
+    if not raw:
+        return None
+    digits = re.findall(r"\d+", raw)
+    if not digits:
+        return None
+    return digits[-1]
+
 load_dotenv()
 
 AIRTABLE_PAT = os.getenv("AIRTABLE_PAT")
@@ -189,18 +199,21 @@ async def airtable_warmup(payload: dict, x_airtable_secret: str = Header(None)):
         raise HTTPException(status_code=400, detail="Missing or invalid records list")
 
     try:
-        # 1. Limpiar cache
+        # 1. Clear cache
         CACHE.clear()
 
-        # 2. Agrupar por Celular
+        # 2. Group by normalized phone
         grouped = defaultdict(list)
+
         for r in records:
             fields = r.get("fields", {})
-            phone = fields.get("Celular")
+            raw_phone = fields.get("Celular")
+            phone = normalize_phone(raw_phone)
+
             if phone:
                 grouped[phone].append(r)
 
-        # 3. Guardar cada grupo en cache
+        # 3. Store each group in cache
         for phone, recs in grouped.items():
             key = f"deliverables:{phone}"
             cache_set(key, {"records": recs})
@@ -214,6 +227,7 @@ async def airtable_warmup(payload: dict, x_airtable_secret: str = Header(None)):
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 from fastapi import Request
 
