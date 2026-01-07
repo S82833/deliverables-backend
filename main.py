@@ -180,10 +180,18 @@ async def airtable_event(payload: dict, x_airtable_secret: str = Header(None)):
         raise HTTPException(status_code=400, detail="Missing record_id, phone or fields")
 
     try:
+        # Resolver redirect del cover image antes de cachear
+        link = fields.get("Link Cover Image")
+        if isinstance(link, list) and link:
+            fields["Link Cover Image"] = [resolve_redirect(link[0])]
+        elif isinstance(link, str):
+            fields["Link Cover Image"] = resolve_redirect(link)
+
         record = {
             "id": record_id,
             "fields": fields
         }
+
         update_cache_with_record(record)
         return {"status": "ok"}
     except Exception as e:
@@ -208,6 +216,14 @@ async def airtable_warmup(payload: dict, x_airtable_secret: str = Header(None)):
 
         for r in records:
             fields = r.get("fields", {})
+
+            # Resolver redirect antes de agrupar/cachear
+            link = fields.get("Link Cover Image")
+            if isinstance(link, list) and link:
+                fields["Link Cover Image"] = [resolve_redirect(link[0])]
+            elif isinstance(link, str):
+                fields["Link Cover Image"] = resolve_redirect(link)
+
             raw_phone = fields.get("Celular")
             phone = normalize_phone(raw_phone)
 
