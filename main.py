@@ -216,14 +216,6 @@ async def airtable_warmup(payload: dict, x_airtable_secret: str = Header(None)):
 
         for r in records:
             fields = r.get("fields", {})
-
-            # Resolver redirect antes de agrupar/cachear
-            link = fields.get("Link Cover Image")
-            if isinstance(link, list) and link:
-                fields["Link Cover Image"] = [resolve_redirect(link[0])]
-            elif isinstance(link, str):
-                fields["Link Cover Image"] = resolve_redirect(link)
-
             raw_phone = fields.get("Celular")
             phone = normalize_phone(raw_phone)
 
