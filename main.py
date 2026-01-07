@@ -220,3 +220,22 @@ from fastapi import Request
 @app.get("/debug-origin")
 async def debug_origin(request: Request):
     return {"origin": request.headers.get("origin")}
+
+@app.get("/debug-cache")
+async def debug_cache():
+    now = time.time()
+    output = {}
+
+    for key, (expires_at, value) in CACHE.items():
+        output[key] = {
+            "expires_in_seconds": max(0, int(expires_at - now)),
+            "expires_at": datetime.fromtimestamp(expires_at).isoformat(),
+            "value": value,
+        }
+
+    return {
+        "cache_size": len(CACHE),
+        "keys": list(CACHE.keys()),
+        "cache": output,
+    }
+
