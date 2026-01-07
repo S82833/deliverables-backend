@@ -15,7 +15,7 @@ from typing import Dict, Any, Tuple
 import re
 
 CACHE: Dict[str, Tuple[float, Any]] = {}
-CACHE_TTL = 60 * 60 * 1  # seconds
+CACHE_TTL = 60 * 60 * 10  # seconds
 
 def cache_get(key: str):
     item = CACHE.get(key)
