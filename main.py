@@ -72,7 +72,8 @@ table = api.table(BASE_ID, TABLE_ID)
 
 def update_cache_with_record(record: dict):
     fields = record.get("fields", {})
-    phone = fields.get("Celular")
+    raw_phone = fields.get("Celular")
+    phone = normalize_phone(raw_phone)
 
     if not phone:
         return
