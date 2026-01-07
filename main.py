@@ -48,8 +48,14 @@ TABLE_ID = os.getenv("TABLE_ID")
 VIEW_ID = os.getenv("VIEW_ID")
 PHONE_FIELD = os.getenv("PHONE_FIELD")
 
+print("AIRTABLE_PAT loaded:", bool(AIRTABLE_PAT))
+print("BASE_ID loaded:", bool(BASE_ID))
+print("TABLE_ID loaded:", bool(TABLE_ID))
+print("VIEW_ID loaded:", bool(VIEW_ID))
+print("PHONE_FIELD loaded:", bool(PHONE_FIELD))
 AIRTABLE_WEBHOOK_SECRET = os.getenv("AIRTABLE_WEBHOOK_SECRET")
 
+print("AIRTABLE_WEBHOOK_SECRET loaded:", bool(AIRTABLE_WEBHOOK_SECRET))
 
 api = Api(AIRTABLE_PAT)
 table = api.table(BASE_ID, TABLE_ID)
