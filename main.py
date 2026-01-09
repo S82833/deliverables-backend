@@ -42,13 +42,24 @@ def resolve_redirect(url: str) -> str:
         return url
 
 
-def normalize_phone(raw: str) -> str | None:
+def normalize_phone(raw) -> str | None:
     if not raw:
         return None
+
+    if isinstance(raw, list):
+        if not raw:
+            return None
+        raw = raw[0]
+
+    # Asegurar string
+    raw = str(raw)
+
     digits = re.findall(r"\d+", raw)
     if not digits:
         return None
+
     return digits[-1]
+
 
 load_dotenv()
 
