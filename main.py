@@ -9,7 +9,8 @@ from collections import defaultdict
 from typing import Optional
 from datetime import datetime
 from pyairtable import Api
-import requests
+import httpx
+import asyncio
 import time
 from typing import Dict, Any, Tuple
 import re
@@ -34,10 +35,11 @@ def cache_set(key: str, value: Any, ttl: int = CACHE_TTL):
     CACHE[key] = (time.time() + ttl, value)
 
 
-def resolve_redirect(url: str) -> str:
+async def resolve_redirect(url: str) -> str:
     try:
-        r = requests.get(url, allow_redirects=True, timeout=5)
-        return r.url
+        async with httpx.AsyncClient(follow_redirects=True, timeout=5) as client:
+            r = await client.head(url)
+            return str(r.url)
     except Exception:
         return url
 
@@ -162,11 +164,20 @@ async def get_deliverables(
             ],
         )
 
-        for r in records:
+        # Resolve redirects in parallel (non-blocking)
+        tasks = []
+        task_indices = []
+        for i, r in enumerate(records):
             f = r.get("fields", {})
             link = f.get("Link Cover Image")
             if isinstance(link, list) and link:
-                f["Link Cover Image Final"] = resolve_redirect(link[0])
+                tasks.append(resolve_redirect(link[0]))
+                task_indices.append(i)
+
+        if tasks:
+            resolved = await asyncio.gather(*tasks)
+            for idx, final_url in zip(task_indices, resolved):
+                records[idx]["fields"]["Link Cover Image Final"] = final_url
 
         response = {"records": records}
 
@@ -194,9 +205,9 @@ async def airtable_event(payload: dict, x_airtable_secret: str = Header(None)):
         # Resolver redirect del cover image antes de cachear
         link = fields.get("Link Cover Image")
         if isinstance(link, list) and link:
-            fields["Link Cover Image"] = [resolve_redirect(link[0])]
+            fields["Link Cover Image"] = [await resolve_redirect(link[0])]
         elif isinstance(link, str):
-            fields["Link Cover Image"] = resolve_redirect(link)
+            fields["Link Cover Image"] = await resolve_redirect(link)
 
         record = {
             "id": record_id,
